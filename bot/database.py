@@ -7,7 +7,6 @@ def init_db(mongo_uri, db_name):
     global client, db
     client = MongoClient(mongo_uri)
     db = client[db_name]
-    # تنظیمات پیش‌فرض
     if not db.settings.find_one():
         default_settings = {
             'sticker': '✅',
@@ -22,27 +21,11 @@ def init_db(mongo_uri, db_name):
             'pm_forward': '✅',
             'pm_resani': '✅',
             'on_off': 'true',
-            'channelFWD': ''
+            'channelFWD': '',
+            'default_text': 'پیام دریافت شد.',
+            'start_text': 'خوش آمدید! برای شروع گپ، گزینه‌ای را انتخاب کنید:'
         }
         db.settings.insert_one(default_settings)
-    # مقداردهی اولیه دکمه‌های سفارشی (خالی)
-    if not db.custom_buttons.find_one():
-        db.custom_buttons.insert_one({
-            'text': 'دکمه نمونه 🌟',
-            'order': 1,
-            'file_id': None,
-            'file_type': None
-        })
-    # مقداردهی اولیه دکمه‌های سیستمی (خالی)
-    if not db.system_buttons.find_one():
-        db.system_buttons.insert_one({
-            'text': 'دکمه سیستمی نمونه 🔧',
-            'order': 1,
-            'file_id': None,
-            'file_type': None,
-            'caption': None,
-            'is_active': False
-        })
 
 def get_setting(key):
     settings = db.settings.find_one()
@@ -57,7 +40,6 @@ def get_user(user_id):
 def update_user(user_id, data):
     db.users.update_one({'user_id': user_id}, {'$set': data}, upsert=True)
 
-# مدیریت دکمه‌های سفارشی
 def add_custom_button(text, file_id=None, file_type=None, caption=None, position='bottom'):
     last_button = db.custom_buttons.find_one(sort=[('order', -1)])
     order = last_button['order'] + 1 if last_button else 1
@@ -96,7 +78,6 @@ def move_custom_button(text, direction):
             db.custom_buttons.update_one({'text': next_button['text']}, {'$set': {'order': current_order}})
     return True
 
-# مدیریت دکمه‌های سیستمی
 def add_system_button(text, file_id=None, file_type=None, caption=None, position='bottom'):
     last_button = db.system_buttons.find_one(sort=[('order', -1)])
     order = last_button['order'] + 1 if last_button else 1
