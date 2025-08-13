@@ -1,31 +1,35 @@
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from bot.database import get_setting, get_custom_buttons, get_system_buttons
 
+def chunk_buttons(buttons, n=2):
+    return [buttons[i:i+n] for i in range(0, len(buttons), n)]
+
 def get_main_menu(is_admin=False):
     on_off = get_setting('on_off') == 'true'
-    # دکمه‌های سفارشی
-    custom_buttons = [[{'text': button['text']}] for button in get_custom_buttons()]
-    # دکمه‌های ثابت
+    custom_buttons = chunk_buttons([button['text'] for button in get_custom_buttons()], 2)
     fixed_buttons = [
         ['🔯غیر فعال کردن حالت ادمین'],
         ['⤴️پیام همگانی', '🈂فوروارد همگانی'],
         ['♓همگانی و عکس', '⏫همگانی و فایل'],
-        ['🔲مدیریت دکمه ها'],
-        ['👱ادمین ها'],
+        ['👱ادمین‌ها'],
         ['❇️متن پیشفرض', '🆕متن استارت'],
         ['🔴ریست کردن'],
-        ['📮پیام به کاربر', '🔧تنظیمات'],
         ['آمار'],
         ['📤آپلود داخلی'],
         ['⛔️خاموش کردن بات' if on_off else '✴️روشن کردن بات', '📣تنظیم چنل'],
-        ['⚠️راهنما', '📂پشتیبان گیری'],
-        ['🔒قفل ربات', '♦حساب کاربری ربات']
+        ['⚠️راهنما', '🔒قفل ربات'],
+        ['♦حساب کاربری ربات']
     ]
-    # اضافه کردن دکمه‌های سیستمی فقط برای ادمین
+    inline_buttons = [
+        [InlineKeyboardButton("🔧تنظیمات", callback_data="settings"),
+         InlineKeyboardButton("🔲مدیریت دکمه‌ها", callback_data="button_management")],
+        [InlineKeyboardButton("📮پیام به کاربر", callback_data="send_message_to_user"),
+         InlineKeyboardButton("📂پشتیبان‌گیری", callback_data="backup")]
+    ]
     if is_admin:
-        system_buttons = [[{'text': button['text']}] for button in get_system_buttons()]
-        return ReplyKeyboardMarkup(system_buttons + custom_buttons + fixed_buttons, resize_keyboard=True)
-    return ReplyKeyboardMarkup(custom_buttons + fixed_buttons, resize_keyboard=True)
+        system_buttons = chunk_buttons([button['text'] for button in get_system_buttons() if button.get('is_active', False)], 2)
+        return ReplyKeyboardMarkup(system_buttons + custom_buttons + fixed_buttons, resize_keyboard=True), InlineKeyboardMarkup(inline_buttons)
+    return ReplyKeyboardMarkup(custom_buttons + fixed_buttons, resize_keyboard=True), InlineKeyboardMarkup(inline_buttons)
 
 def get_settings_menu():
     settings = {
